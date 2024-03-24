@@ -9,13 +9,11 @@ import lombok.Data;
 import nostr.base.ElementAttribute;
 import nostr.base.IDecoder;
 import nostr.event.BaseMessage;
-import nostr.event.impl.ClientAuthenticationEvent;
 import nostr.event.impl.GenericEvent;
 import nostr.event.impl.GenericMessage;
 import nostr.event.list.FiltersList;
-import nostr.event.message.BaseAuthMessage;
-import nostr.event.message.ClientAuthenticationMessage;
 import nostr.event.message.CloseMessage;
+import nostr.event.message.ClosedMessage;
 import nostr.event.message.EoseMessage;
 import nostr.event.message.EventMessage;
 import nostr.event.message.NoticeMessage;
@@ -49,20 +47,7 @@ public class BaseMessageDecoder implements IDecoder<BaseMessage> {
             }
 
             switch (strCmd) {
-                case "AUTH" -> {
-                    final BaseAuthMessage authMsg;
-                    // Client Auth
-                    if (arg instanceof Map map) {
-                        var event = mapper.convertValue(map, new TypeReference<ClientAuthenticationEvent>() {
-                        });
-                        authMsg = new ClientAuthenticationMessage(event);
-                    } else {
-                        // Relay Auth                        
-                        final var challenge = arg.toString();
-                        authMsg = new RelayAuthenticationMessage(challenge);
-                    }
-                    message = authMsg;
-                }
+                case "AUTH" -> message = new RelayAuthenticationMessage(arg.toString());
                 case "CLOSE" -> message = new CloseMessage(arg.toString());
                 case "EOSE" -> message = new EoseMessage(arg.toString());
                 case "EVENT" -> {
@@ -87,13 +72,22 @@ public class BaseMessageDecoder implements IDecoder<BaseMessage> {
                         String msgArg = msgArr[3].toString();
                         message = new OkMessage(arg.toString(), duplicate, msgArg);
                     } else {
-                        throw new AssertionError("Invalid argument: " + msgArr[2]);
+                        throw new AssertionError("Invalid arguments");
                     }
                 }
                 case "REQ" -> {
                     var filtersList = mapper.convertValue(msgArr[2], new TypeReference<FiltersList>() {
                     });
                     message = new ReqMessage(arg.toString(), filtersList);
+                }
+                case "CLOSED" -> {
+                    if (msgArr.length == 3) {
+                        var subId = msgArr[1].toString();
+                        var msg = msgArr[2].toString();
+                        message = new ClosedMessage(subId, msg);
+                    } else {
+                        throw new AssertionError("Invalid arguments");
+                    }
                 }
                 default -> {
                     // NOTE: Only String attribute supported. It would be impossible to guess the object's type

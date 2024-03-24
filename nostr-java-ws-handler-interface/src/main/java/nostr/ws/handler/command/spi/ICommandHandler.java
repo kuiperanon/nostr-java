@@ -26,12 +26,16 @@ public interface ICommandHandler extends IHandler {
 
     void onAuth(String challenge, Relay relay);
 
+    void onClosed(String subId, Reason reason, String message, Relay relay);
+
     enum Reason {
         UNDEFINED(""),
         DUPLICATE("duplicate"),
         BLOCKED("blocked"),
         INVALID("invalid"),
         RATE_LIMITED("rate-limited"),
+        AUTH_REQUIRED("auth-required"), // AUTHENTICATION REQUIRED
+        RESTRICTED("restricted"),
         ERROR("error"),
         POW("pow");
 

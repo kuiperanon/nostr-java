@@ -3,11 +3,6 @@
  */
 package nostr.ws.response.handler.provider;
 
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.ServiceLoader;
-import java.util.logging.Level;
-
 import lombok.Data;
 import lombok.NonNull;
 import lombok.extern.java.Log;
@@ -17,7 +12,7 @@ import nostr.event.BaseEvent;
 import nostr.event.BaseMessage;
 import nostr.event.json.codec.BaseEventEncoder;
 import nostr.event.json.codec.BaseMessageDecoder;
-import nostr.event.message.ClientAuthenticationMessage;
+import nostr.event.message.ClosedMessage;
 import nostr.event.message.EoseMessage;
 import nostr.event.message.EventMessage;
 import nostr.event.message.NoticeMessage;
@@ -27,6 +22,11 @@ import nostr.util.NostrException;
 import nostr.ws.handler.command.spi.ICommandHandler;
 import nostr.ws.handler.command.spi.ICommandHandler.Reason;
 import nostr.ws.handler.spi.IResponseHandler;
+
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.ServiceLoader;
+import java.util.logging.Level;
 
 /**
  *
@@ -92,17 +92,10 @@ public class ResponseHandlerImpl implements IResponseHandler {
                     String eventId = msg.getEventId();
                     boolean result = msg.getFlag();
                     String strMsg = msg.getMessage();
-                    final var msgSplit = strMsg.split(":", 2);
-                    Reason reason;
-                    String reasonMessage = strMsg;
-                    if (msgSplit.length < 2) {
-                        reason = Reason.UNDEFINED;
-                    } else {
-                        reason = Reason.fromCode(msgSplit[0]).orElseThrow(RuntimeException::new);
-                        reasonMessage = msgSplit[1];
-                    }
+                    Reason reason = getReason(strMsg);
+                    String okMessage = getMessage(strMsg);
 
-                    commandHandler.onOk(eventId, reasonMessage, reason, result, relay);
+                    commandHandler.onOk(eventId, okMessage, reason, result, relay);
                 } else {
                     throw new AssertionError("OK");
                 }
@@ -128,14 +121,40 @@ public class ResponseHandlerImpl implements IResponseHandler {
                 if (oMsg instanceof RelayAuthenticationMessage msg) {
                     var challenge = msg.getChallenge();
                     commandHandler.onAuth(challenge, relay);
-                } else if (oMsg instanceof ClientAuthenticationMessage msg) {
-                    // Actually, do nothing!
                 } else {
                     throw new AssertionError("AUTH");
                 }
+            }
 
+            case "CLOSED" -> {
+                if (oMsg instanceof ClosedMessage msg) {
+                    String strMsg = msg.getMessage();
+                    Reason reason = getReason(strMsg);
+                    String closedMessage = getMessage(strMsg);
+                    commandHandler.onClosed(msg.getSubscriptionId(), reason, closedMessage, relay);
+                } else {
+                    throw new AssertionError("CLOSED");
+                }
             }
             default -> throw new AssertionError("Unknown command " + command);
+        }
+    }
+
+    private Reason getReason(String input) {
+        final var msgSplit = input.split(":", 2);
+        if (msgSplit.length < 2) {
+            return Reason.UNDEFINED;
+        } else {
+            return Reason.fromCode(msgSplit[0]).orElseThrow(RuntimeException::new);
+        }
+    }
+
+    private String getMessage(@NonNull String input) {
+        final var msgSplit = input.split(":", 2);
+        if (msgSplit.length < 2) {
+            return input;
+        } else {
+            return msgSplit[1];
         }
     }
 }

@@ -3,6 +3,7 @@ package nostr.event.message;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NonNull;
 import lombok.ToString;
 import nostr.base.Command;
 
@@ -18,7 +19,7 @@ public class RelayAuthenticationMessage extends BaseAuthMessage {
     @JsonProperty
     private final String challenge;
 
-    public RelayAuthenticationMessage(String challenge) {
+    public RelayAuthenticationMessage(@NonNull String challenge) {
         super(Command.AUTH.name());
         this.challenge = challenge;
     }

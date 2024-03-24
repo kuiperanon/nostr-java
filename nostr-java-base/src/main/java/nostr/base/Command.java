@@ -13,6 +13,7 @@ public enum Command {
     EVENT("IN/OUT"),
     REQ("OUT"),
     CLOSE("OUT"),
+    CLOSED("IN"),
     NOTICE("IN"),
     EOSE("IN"),
     OK("IN");

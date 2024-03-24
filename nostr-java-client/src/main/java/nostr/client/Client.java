@@ -6,12 +6,12 @@ import lombok.extern.java.Log;
 import nostr.base.IEvent;
 import nostr.base.Relay;
 import nostr.event.BaseMessage;
-import nostr.event.impl.ClientAuthenticationEvent;
+import nostr.event.impl.CanonicalAuthenticationEvent;
 import nostr.event.list.FiltersList;
 import nostr.event.message.ClientAuthenticationMessage;
-import nostr.event.message.CloseMessage;
 import nostr.event.message.EventMessage;
 import nostr.event.message.ReqMessage;
+import nostr.id.IIdentity;
 import nostr.id.Identity;
 import nostr.util.AbstractBaseConfiguration;
 import nostr.util.NostrException;
@@ -42,54 +42,54 @@ public class Client {
 
     private static Client INSTANCE;
 
-	private final List<Future<Relay>> futureRelays = new ArrayList<>();
-	@Getter
+    private final List<Future<Relay>> futureRelays = new ArrayList<>();
+    @Getter
     private final List<BaseMessage> responses = new ArrayList<>();
-	private final IRequestHandler requestHandler = new DefaultRequestHandler(responses);
-	
-//	TODO: remove getter
-	@Getter
-	private final ThreadPoolExecutor threadPool = (ThreadPoolExecutor) Executors.newCachedThreadPool();
+    private final IRequestHandler requestHandler = new DefaultRequestHandler(responses);
 
-	public Client() throws IOException {
+    //	TODO: remove getter
+    @Getter
+    private final ThreadPoolExecutor threadPool = (ThreadPoolExecutor) Executors.newCachedThreadPool();
+
+    public Client() throws IOException {
         this.init();
     }
 
-	public Client(Map<String, String> relays) {
+    public Client(Map<String, String> relays) {
         this.init(relays);
     }
 
     public static Client getInstance() {
         if (INSTANCE == null) {
-			try {
-				INSTANCE = new Client();
-			} catch (IOException ex) {
-				log.log(Level.SEVERE, null, ex);
-				throw new RuntimeException(ex);
-			}
+            try {
+                INSTANCE = new Client();
+            } catch (IOException ex) {
+                log.log(Level.SEVERE, null, ex);
+                throw new RuntimeException(ex);
+            }
         }
 
-		return INSTANCE.waitConnection();
+        return INSTANCE.waitConnection();
     }
 
     public static Client getInstance(Map<String, String> relays) {
-		INSTANCE = (INSTANCE == null) ? new Client(relays) : INSTANCE;
+        INSTANCE = (INSTANCE == null) ? new Client(relays) : INSTANCE;
 
-		return INSTANCE.waitConnection();
+        return INSTANCE.waitConnection();
     }
 
-	public Client waitConnection() {
-		do {
-			try {
-				log.log(Level.INFO, "Waiting for relays' connections to open...");
-				Thread.sleep(5000);
-			} catch (InterruptedException ex) {
-				throw new RuntimeException(ex);
-			}
-		} while (this.threadPool.getCompletedTaskCount() < (this.getRelays().size() / 2));
+    public Client waitConnection() {
+        do {
+            try {
+                log.log(Level.INFO, "Waiting for relays' connections to open...");
+                Thread.sleep(5000);
+            } catch (InterruptedException ex) {
+                throw new RuntimeException(ex);
+            }
+        } while (this.threadPool.getCompletedTaskCount() < (this.getRelays().size() / 2));
 
-		return this;
-	}
+        return this;
+    }
 
     public List<Relay> getRelays() {
         return futureRelays.parallelStream()
@@ -127,13 +127,7 @@ public class Client {
         send(message);
     }
 
-    public void send(@NonNull String subscriptionId) {
-        CloseMessage message = new CloseMessage(subscriptionId);
-        send(message);
-    }
-
-    // TODO - Make private?
-	public void send(@NonNull BaseMessage message) {
+    public void send(@NonNull BaseMessage message) {
 
         log.log(Level.INFO, "Sending message {0}", message);
 
@@ -157,37 +151,27 @@ public class Client {
                 });
     }
 
-    public void auth(Identity identity, String challenge) {
-
-        log.log(Level.FINER, "Authenticating {0}", identity);
-        List<Relay> relays = getRelayList();
-        var event = new ClientAuthenticationEvent(identity.getPublicKey(), challenge, relays);
-        BaseMessage authMsg = new ClientAuthenticationMessage(event);
-
-        identity.sign(event);
-        this.send(authMsg);
+    public void send(@NonNull BaseMessage message, @NonNull Relay relay) {
+        log.log(Level.INFO, "Sending message {0} to relay {1}", new Object[]{message, relay});
+        try {
+            this.requestHandler.process(message, relay);
+        } catch (NostrException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
+    @Deprecated(forRemoval = true)
     public void auth(String challenge, Relay relay) {
         auth(Identity.getInstance(), challenge, relay);
     }
 
-    public void auth(Identity identity, String challenge, Relay relay) {
+    public void auth(@NonNull IIdentity identity, @NonNull String challenge, @NonNull Relay relay) {
 
         log.log(Level.INFO, "Authenticating...");
-        var event = new ClientAuthenticationEvent(identity.getPublicKey(), challenge, relay);
+        var event = new CanonicalAuthenticationEvent(identity.getPublicKey(), relay, challenge);
         BaseMessage authMsg = new ClientAuthenticationMessage(event);
-
         identity.sign(event);
-        this.send(authMsg);
-    }
-
-    public Relay getDefaultRelay() {
-        List<Relay> relays = getRelays();
-        if (!relays.isEmpty()) {
-            return relays.get(0);
-        }
-        throw new RuntimeException("No configured relay list found");
+        this.send(authMsg, relay);
     }
 
     private List<Relay> getRelayList() {

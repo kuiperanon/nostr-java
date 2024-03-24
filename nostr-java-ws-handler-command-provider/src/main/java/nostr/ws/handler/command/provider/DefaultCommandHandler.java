@@ -4,19 +4,18 @@
  */
 package nostr.ws.handler.command.provider;
 
-import java.util.logging.Level;
+import lombok.NonNull;
 import lombok.extern.java.Log;
 import nostr.base.Command;
 import nostr.base.Relay;
 import nostr.base.annotation.DefaultHandler;
 import nostr.client.Client;
 import nostr.id.Identity;
-import nostr.util.NostrException;
 import nostr.ws.handler.command.spi.ICommandHandler;
-import nostr.ws.handler.command.spi.ICommandHandler.Reason;
+
+import java.util.logging.Level;
 
 /**
- *
  * @author squirrel
  */
 @Log
@@ -31,6 +30,9 @@ public class DefaultCommandHandler implements ICommandHandler {
     @Override
     public void onOk(String eventId, String reasonMessage, Reason reason, boolean result, Relay relay) {
         log.log(Level.FINE, "Command: {0} - Event ID: {1} - Reason: {2} ({3}) - Result: {4} - Relay {5}", new Object[]{Command.OK, eventId, reason, reasonMessage, result, relay});
+        if (reason == Reason.AUTH_REQUIRED) {
+            log.log(Level.WARNING, "Authentication required on relay {0}", relay);
+        }
     }
 
     @Override
@@ -44,17 +46,21 @@ public class DefaultCommandHandler implements ICommandHandler {
     }
 
     @Override
-    public void onAuth(String challenge, Relay relay) {
+    public void onAuth(@NonNull String challenge, @NonNull Relay relay) {
         log.log(Level.FINE, "Command: {0} - Relay {1}", new Object[]{Command.AUTH, relay});
-        
+        auth(challenge, relay);
+    }
+
+    @Override
+    public void onClosed(@NonNull String subId, @NonNull Reason reason, @NonNull String message, @NonNull Relay relay) {
+        log.log(Level.WARNING, "Command: {0} - Subscription ID: {1} - Reason: {2} - Message: {3} - Relay {4}", new Object[]{Command.CLOSED, subId, reason, message, relay});
+    }
+
+    public static void auth(@NonNull String challenge, @NonNull Relay relay) {
+        log.log(Level.INFO, "Authenticating with challenge: {0} on relay {1}", new Object[]{"<hidden>", relay});
         var client = Client.getInstance();
         var identity = Identity.getInstance();
-        
+
         client.auth(identity, challenge, relay);
-    }
-    
-    public static void auth(String challenge, Relay relay) throws NostrException {
-        log.log(Level.FINE, "Command: {0} - Relay {0}", new Object[]{Command.AUTH, relay});
-        new DefaultCommandHandler().onAuth(challenge, relay);
     }
 }

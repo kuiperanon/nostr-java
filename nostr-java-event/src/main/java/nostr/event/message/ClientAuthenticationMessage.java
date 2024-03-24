@@ -4,9 +4,10 @@ package nostr.event.message;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NonNull;
 import lombok.ToString;
 import nostr.base.Command;
-import nostr.event.impl.ClientAuthenticationEvent;
+import nostr.event.impl.CanonicalAuthenticationEvent;
 
 /**
  *
@@ -15,12 +16,13 @@ import nostr.event.impl.ClientAuthenticationEvent;
 @Data
 @EqualsAndHashCode(callSuper = false)
 @ToString(callSuper = true)
+@Deprecated(forRemoval = true)
 public class ClientAuthenticationMessage extends BaseAuthMessage {
 
     @JsonProperty
-    private final ClientAuthenticationEvent event;
+    private final CanonicalAuthenticationEvent event;
     
-    public ClientAuthenticationMessage(ClientAuthenticationEvent event) {
+    public ClientAuthenticationMessage(@NonNull CanonicalAuthenticationEvent event) {
         super(Command.AUTH.name());
         this.event = event;
     }
