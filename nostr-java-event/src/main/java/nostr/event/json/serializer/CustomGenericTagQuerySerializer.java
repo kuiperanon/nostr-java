@@ -1,16 +1,15 @@
 package nostr.event.json.serializer;
 
-import java.io.IOException;
-import java.io.Serial;
-
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-
 import nostr.base.GenericTagQuery;
 import nostr.base.IEncoder;
+
+import java.io.IOException;
+import java.io.Serial;
 
 /**
  * @author guilhermegps
@@ -34,7 +33,7 @@ public class CustomGenericTagQuerySerializer extends StdSerializer<GenericTagQue
         }
     }
 
-    private static JsonNode toJson(GenericTagQuery gtq) {
+    public static JsonNode toJson(GenericTagQuery gtq) {
         var mapper = IEncoder.MAPPER;
         try {
             JsonNode node = mapper.valueToTree(gtq);

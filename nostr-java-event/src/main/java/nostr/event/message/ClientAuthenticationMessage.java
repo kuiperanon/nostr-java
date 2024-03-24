@@ -16,7 +16,6 @@ import nostr.event.impl.CanonicalAuthenticationEvent;
 @Data
 @EqualsAndHashCode(callSuper = false)
 @ToString(callSuper = true)
-@Deprecated(forRemoval = true)
 public class ClientAuthenticationMessage extends BaseAuthMessage {
 
     @JsonProperty

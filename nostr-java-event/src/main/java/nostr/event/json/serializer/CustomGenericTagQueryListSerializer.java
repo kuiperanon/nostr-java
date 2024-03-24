@@ -1,17 +1,12 @@
 package nostr.event.json.serializer;
 
-import java.io.IOException;
-import java.util.stream.Collectors;
-
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-
-import nostr.base.GenericTagQuery;
-import nostr.base.IEncoder;
 import nostr.event.list.GenericTagQueryList;
+
+import java.io.IOException;
+import java.util.stream.Collectors;
 
 /**
  * @author guilhermegps
@@ -22,7 +17,7 @@ public class CustomGenericTagQueryListSerializer extends JsonSerializer<GenericT
     @Override
     public void serialize(GenericTagQueryList value, JsonGenerator gen, SerializerProvider serializers) {
         try {
-            var list = value.getList().parallelStream().map(gtq -> toJson(gtq))
+            var list = value.getList().parallelStream().map(gtq -> CustomGenericTagQuerySerializer.toJson(gtq))
                     .collect(Collectors.toList());
 
             gen.writePOJO(list);
@@ -31,6 +26,7 @@ public class CustomGenericTagQueryListSerializer extends JsonSerializer<GenericT
         }
     }
 
+/*
     private JsonNode toJson(GenericTagQuery gtq) {
         var mapper = IEncoder.MAPPER;
         try {
@@ -45,5 +41,6 @@ public class CustomGenericTagQueryListSerializer extends JsonSerializer<GenericT
             throw new RuntimeException(e);
         }
     }
+*/
 
 }

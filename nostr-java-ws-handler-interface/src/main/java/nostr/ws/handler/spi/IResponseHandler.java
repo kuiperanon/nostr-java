@@ -18,6 +18,6 @@ public interface IResponseHandler extends IHandler {
 	
 	void setResponses(@NonNull List<BaseMessage> responses);
 	
-    void process(@NonNull String message, Relay relay) throws NostrException;
+    void process(@NonNull String message, Relay relay);
 
 }

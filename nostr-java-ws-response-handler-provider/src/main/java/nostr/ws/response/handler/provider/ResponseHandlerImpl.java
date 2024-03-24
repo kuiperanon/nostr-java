@@ -72,7 +72,7 @@ public class ResponseHandlerImpl implements IResponseHandler {
     }
 
     @Override
-    public void process(String message, Relay relay) throws NostrException {
+    public void process(String message, Relay relay) {
         log.log(Level.FINE, "Processing message: {0} from relay: {1}", new Object[]{message, relay});
 
         var oMsg = new BaseMessageDecoder(message).decode();

@@ -2,6 +2,7 @@ package nostr.crypto.nip44;
 
 import lombok.NonNull;
 import lombok.extern.java.Log;
+import nostr.util.NostrUtil;
 import org.bouncycastle.crypto.digests.SHA256Digest;
 import org.bouncycastle.crypto.generators.HKDFBytesGenerator;
 import org.bouncycastle.crypto.params.ECDomainParameters;
@@ -103,7 +104,7 @@ public class EncryptedPayloads {
         ECPrivateKeyParameters privateKeyParameters = new ECPrivateKeyParameters(d, domainParameters);
 
         // Convert the public key string to an ECPoint
-        ECPoint Q = domainParameters.getCurve().decodePoint(hexStringToByteArray(pubkeyB));
+        ECPoint Q = domainParameters.getCurve().decodePoint(NostrUtil.hexToBytes(pubkeyB));
 
         // Create a public key parameter
         ECPublicKeyParameters publicKeyParameters = new ECPublicKeyParameters(Q, domainParameters);
@@ -118,11 +119,11 @@ public class EncryptedPayloads {
         char[] sharedXChars = new String(sharedX, StandardCharsets.UTF_8).toCharArray();
         PBEKeySpec keySpec = new PBEKeySpec(sharedXChars, "nip44-v2".getBytes(), 65536, 256);
         SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
-        byte[] key = factory.generateSecret(keySpec).getEncoded();
 
-        return key;
+        return factory.generateSecret(keySpec).getEncoded();
     }
 
+/*
     public static byte[] hexStringToByteArray(String s) {
         int len = s.length();
         byte[] data = new byte[len / 2];
@@ -132,6 +133,7 @@ public class EncryptedPayloads {
         }
         return data;
     }
+*/
 
     private static int calcPaddedLen(int unpaddedLen) {
         int nextPower = 1 << ((int) Math.floor(Math.log(unpaddedLen - 1) / Math.log(2)) + 1);
